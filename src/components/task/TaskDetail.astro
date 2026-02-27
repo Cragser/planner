@@ -1,0 +1,124 @@
+---
+// TaskDetail — full view of a task with markdown-rendered description
+---
+<div id="task-detail-content" style="display:none">
+  <div class="task-detail-header">
+    <h2 id="task-detail-title"></h2>
+    <div class="task-detail-actions">
+      <button class="btn" id="task-detail-edit">Edit</button>
+      <button class="btn" id="task-detail-delete" style="color:var(--color-priority-p0)">Delete</button>
+      <button class="btn" id="task-detail-close">Close</button>
+    </div>
+  </div>
+  <div class="task-detail-meta">
+    <span class="status-badge" id="task-detail-status"></span>
+    <span class="priority-indicator" id="task-detail-priority-dot"></span>
+    <span id="task-detail-priority-label"></span>
+    <span class="task-detail-dates" id="task-detail-dates"></span>
+  </div>
+  <div class="task-detail-tags" id="task-detail-tags"></div>
+  <div class="task-detail-body" id="task-detail-body"></div>
+  <div class="task-detail-footer">
+    <span id="task-detail-created"></span>
+    <span id="task-detail-updated"></span>
+  </div>
+</div>
+
+<script>
+  import type { Task } from '../../lib/types.ts';
+  import { STATUS_LABELS, PRIORITY_LABELS } from '../../lib/types.ts';
+  import MarkdownIt from 'markdown-it';
+
+  const md = new MarkdownIt();
+
+  export function renderTaskDetail(task: Task): void {
+    const content = document.getElementById('task-detail-content');
+    if (!content) return;
+    content.style.display = '';
+    content.dataset.taskId = task.id;
+
+    const title = document.getElementById('task-detail-title');
+    if (title) title.textContent = task.title;
+
+    const status = document.getElementById('task-detail-status');
+    if (status) {
+      status.textContent = STATUS_LABELS[task.status];
+      status.className = `status-badge status-badge--${task.status}`;
+    }
+
+    const dot = document.getElementById('task-detail-priority-dot');
+    if (dot) dot.className = `priority-indicator priority-indicator--${task.priority}`;
+
+    const pLabel = document.getElementById('task-detail-priority-label');
+    if (pLabel) pLabel.textContent = PRIORITY_LABELS[task.priority];
+
+    const dates = document.getElementById('task-detail-dates');
+    if (dates) dates.textContent = `${task.start}${task.end ? ` → ${task.end}` : ''}`;
+
+    const tags = document.getElementById('task-detail-tags');
+    if (tags) tags.innerHTML = task.tags.map(t => `<span class="tag">${t}</span>`).join(' ');
+
+    const body = document.getElementById('task-detail-body');
+    if (body) body.innerHTML = task.description ? md.render(task.description) : '<em>No description</em>';
+
+    const created = document.getElementById('task-detail-created');
+    if (created) created.textContent = `Created: ${new Date(task.created).toLocaleDateString()}`;
+
+    const updated = document.getElementById('task-detail-updated');
+    if (updated) updated.textContent = `Updated: ${new Date(task.updated).toLocaleDateString()}`;
+  }
+
+  (window as any).renderTaskDetail = renderTaskDetail;
+</script>
+
+<style>
+  .task-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-md);
+  }
+  .task-detail-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+  }
+  .task-detail-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-sm);
+  }
+  .task-detail-dates {
+    color: var(--color-text-muted);
+  }
+  .task-detail-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: var(--spacing-md);
+  }
+  .task-detail-body {
+    padding: var(--spacing-md) 0;
+    border-top: 1px solid var(--color-border);
+    line-height: 1.6;
+  }
+  .task-detail-body :global(pre) {
+    background: var(--color-surface);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-sm);
+    overflow-x: auto;
+  }
+  .task-detail-body :global(code) {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+  }
+  .task-detail-footer {
+    display: flex;
+    gap: var(--spacing-lg);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+</style>

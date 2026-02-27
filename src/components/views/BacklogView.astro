@@ -1,0 +1,336 @@
+---
+// BacklogView — sortable, filterable table of all tasks
+// T027: Table structure | T028: Column sorting | T029: Filter integration
+// T030: Inline editing | T031: Drag-and-drop reorder | T032: Persist order
+---
+<div class="backlog-view" id="backlog-view">
+  <table class="backlog-table" id="backlog-table">
+    <thead>
+      <tr>
+        <th class="col-drag"></th>
+        <th class="col-priority sortable" data-sort="priority">Priority</th>
+        <th class="col-title sortable" data-sort="title">Title</th>
+        <th class="col-status sortable" data-sort="status">Status</th>
+        <th class="col-start sortable" data-sort="start">Start</th>
+        <th class="col-end sortable" data-sort="end">End</th>
+        <th class="col-tags">Tags</th>
+      </tr>
+    </thead>
+    <tbody id="backlog-body">
+    </tbody>
+  </table>
+  <div class="backlog-empty" id="backlog-empty" style="display:none">
+    <p>No tasks match current filters.</p>
+  </div>
+</div>
+
+<script>
+  import type { Task, Status, Priority, SortColumn } from '../../lib/types.ts';
+  import { STATUS_LABELS, PRIORITY_LABELS, VALID_TRANSITIONS, PRIORITY_WEIGHT } from '../../lib/types.ts';
+
+  const tbody = document.getElementById('backlog-body') as HTMLTableSectionElement;
+  const emptyMsg = document.getElementById('backlog-empty') as HTMLElement;
+  const table = document.getElementById('backlog-table') as HTMLTableElement;
+
+  // --- Sort State ---
+  let sortColumn: SortColumn = 'order';
+  let sortDirection: 'asc' | 'desc' = 'asc';
+
+  // --- Filter State (read from filter bar) ---
+  function getActiveStatusFilters(): Status[] {
+    const sel = document.getElementById('status-filter') as HTMLSelectElement | null;
+    if (!sel) return [];
+    return Array.from(sel.selectedOptions).map(o => o.value as Status);
+  }
+  function getActivePriorityFilters(): Priority[] {
+    const sel = document.getElementById('priority-filter') as HTMLSelectElement | null;
+    if (!sel) return [];
+    return Array.from(sel.selectedOptions).map(o => o.value as Priority);
+  }
+  function getSearchQuery(): string {
+    const input = document.getElementById('search-input') as HTMLInputElement | null;
+    return input?.value.trim().toLowerCase() || '';
+  }
+
+  // --- Render ---
+  function renderBacklog(allTasks: Task[]) {
+    const statusFilters = getActiveStatusFilters();
+    const priorityFilters = getActivePriorityFilters();
+    const search = getSearchQuery();
+
+    // Filter
+    let filtered = allTasks.filter(task => {
+      if (statusFilters.length > 0 && !statusFilters.includes(task.status)) return false;
+      if (priorityFilters.length > 0 && !priorityFilters.includes(task.priority)) return false;
+      if (search) {
+        const inTitle = task.title.toLowerCase().includes(search);
+        const inDesc = task.description.toLowerCase().includes(search);
+        if (!inTitle && !inDesc) return false;
+      }
+      return true;
+    });
+
+    // Sort
+    const mult = sortDirection === 'asc' ? 1 : -1;
+    filtered.sort((a, b) => {
+      let cmp = 0;
+      switch (sortColumn) {
+        case 'title': cmp = a.title.localeCompare(b.title); break;
+        case 'status': cmp = a.status.localeCompare(b.status); break;
+        case 'priority': cmp = PRIORITY_WEIGHT[a.priority] - PRIORITY_WEIGHT[b.priority]; break;
+        case 'start': cmp = a.start.localeCompare(b.start); break;
+        case 'end': cmp = (a.end || '9999').localeCompare(b.end || '9999'); break;
+        case 'order': cmp = a.order - b.order; break;
+      }
+      if (cmp === 0) cmp = a.created.localeCompare(b.created);
+      return cmp * mult;
+    });
+
+    // Render rows
+    tbody.innerHTML = '';
+    if (filtered.length === 0) {
+      emptyMsg.style.display = '';
+      table.style.display = 'none';
+      return;
+    }
+    emptyMsg.style.display = 'none';
+    table.style.display = '';
+
+    const today = new Date().toISOString().split('T')[0];
+
+    for (const task of filtered) {
+      const isOverdue = task.end && task.end < today && task.status !== 'done' && task.status !== 'archived';
+      const tr = document.createElement('tr');
+      tr.className = `backlog-row${isOverdue ? ' task--overdue' : ''}`;
+      tr.dataset.taskId = task.id;
+      tr.draggable = true;
+
+      // Build status options (only valid transitions)
+      const statusAllowed = [task.status, ...VALID_TRANSITIONS[task.status]];
+      const statusOpts = statusAllowed.map(s =>
+        `<option value="${s}"${s === task.status ? ' selected' : ''}>${STATUS_LABELS[s]}</option>`
+      ).join('');
+
+      // Build priority options
+      const priorityOpts = (['p0','p1','p2','p3'] as Priority[]).map(p =>
+        `<option value="${p}"${p === task.priority ? ' selected' : ''}>${PRIORITY_LABELS[p]}</option>`
+      ).join('');
+
+      tr.innerHTML = `
+        <td class="col-drag"><span class="drag-handle">⠿</span></td>
+        <td class="col-priority">
+          <span class="priority-indicator priority-indicator--${task.priority}"></span>
+          <select class="inline-select" data-task-id="${task.id}" data-field="priority">${priorityOpts}</select>
+        </td>
+        <td class="col-title"><span class="task-title-link" data-task-id="${task.id}">${escapeHtml(task.title)}</span></td>
+        <td class="col-status">
+          <select class="inline-select" data-task-id="${task.id}" data-field="status">${statusOpts}</select>
+        </td>
+        <td class="col-start">${task.start}</td>
+        <td class="col-end${isOverdue ? ' task-end-date' : ''}">${task.end || '—'}</td>
+        <td class="col-tags">${task.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join(' ')}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function escapeHtml(s: string): string {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // --- Column Header Sort (T028) ---
+  table?.querySelector('thead')?.addEventListener('click', (e) => {
+    const th = (e.target as HTMLElement).closest('.sortable') as HTMLElement | null;
+    if (!th?.dataset.sort) return;
+    const col = th.dataset.sort as SortColumn;
+    if (sortColumn === col) {
+      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortColumn = col;
+      sortDirection = 'asc';
+    }
+    // Update sort indicators
+    table.querySelectorAll('.sortable').forEach(el => {
+      el.classList.remove('sort-asc', 'sort-desc');
+    });
+    th.classList.add(sortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+    // Re-render
+    document.dispatchEvent(new CustomEvent('planner:request-refresh'));
+  });
+
+  // --- Filter Integration (T029) ---
+  document.getElementById('status-filter')?.addEventListener('change', () => {
+    document.dispatchEvent(new CustomEvent('planner:request-refresh'));
+  });
+  document.getElementById('priority-filter')?.addEventListener('change', () => {
+    document.dispatchEvent(new CustomEvent('planner:request-refresh'));
+  });
+  document.getElementById('search-input')?.addEventListener('input', () => {
+    document.dispatchEvent(new CustomEvent('planner:request-refresh'));
+  });
+  document.getElementById('btn-reset-filters')?.addEventListener('click', () => {
+    const sf = document.getElementById('status-filter') as HTMLSelectElement | null;
+    const pf = document.getElementById('priority-filter') as HTMLSelectElement | null;
+    const si = document.getElementById('search-input') as HTMLInputElement | null;
+    if (sf) Array.from(sf.options).forEach(o => o.selected = false);
+    if (pf) Array.from(pf.options).forEach(o => o.selected = false);
+    if (si) si.value = '';
+    document.dispatchEvent(new CustomEvent('planner:request-refresh'));
+  });
+
+  // --- Click to open task detail ---
+  tbody?.addEventListener('click', (e) => {
+    const link = (e.target as HTMLElement).closest('.task-title-link') as HTMLElement | null;
+    if (link?.dataset.taskId) {
+      // Dispatch to open task detail (handled by index.astro)
+      const taskId = link.dataset.taskId;
+      const card = document.querySelector(`.task-card[data-task-id="${taskId}"]`) as HTMLElement | null;
+      // Use the global click handler from index.astro by dispatching custom event
+      document.dispatchEvent(new CustomEvent('planner:open-task', { detail: { taskId } }));
+    }
+  });
+
+  // --- Drag and Drop Reorder (T031, T032) ---
+  let draggedId: string | null = null;
+
+  tbody?.addEventListener('dragstart', (e) => {
+    const row = (e.target as HTMLElement).closest('tr') as HTMLElement | null;
+    if (!row?.dataset.taskId) return;
+    draggedId = row.dataset.taskId;
+    row.classList.add('dragging');
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedId);
+    }
+  });
+
+  tbody?.addEventListener('dragend', (e) => {
+    const row = (e.target as HTMLElement).closest('tr') as HTMLElement | null;
+    if (row) row.classList.remove('dragging');
+    draggedId = null;
+  });
+
+  tbody?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    const row = (e.target as HTMLElement).closest('tr') as HTMLElement | null;
+    if (row && row.dataset.taskId !== draggedId) {
+      // Remove previous indicators
+      tbody.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
+      row.classList.add('drag-over');
+    }
+  });
+
+  tbody?.addEventListener('dragleave', (e) => {
+    const row = (e.target as HTMLElement).closest('tr') as HTMLElement | null;
+    if (row) row.classList.remove('drag-over');
+  });
+
+  tbody?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    tbody.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
+
+    const targetRow = (e.target as HTMLElement).closest('tr') as HTMLElement | null;
+    if (!targetRow?.dataset.taskId || !draggedId) return;
+    if (targetRow.dataset.taskId === draggedId) return;
+
+    // Reorder: dispatch event with source and target IDs
+    document.dispatchEvent(new CustomEvent('planner:reorder-task', {
+      detail: { sourceId: draggedId, targetId: targetRow.dataset.taskId }
+    }));
+  });
+
+  // --- Listen for task changes ---
+  document.addEventListener('planner:tasks-changed', ((e: CustomEvent) => {
+    renderBacklog(e.detail.tasks || []);
+  }) as EventListener);
+
+  document.addEventListener('planner:request-refresh', () => {
+    // Re-dispatch with current tasks to trigger re-render
+    document.dispatchEvent(new CustomEvent('planner:tasks-changed', {
+      detail: { tasks: (window as any).__plannerTasks || [] }
+    }));
+  });
+
+  // Store tasks globally for refresh access
+  document.addEventListener('planner:tasks-changed', ((e: CustomEvent) => {
+    (window as any).__plannerTasks = e.detail.tasks || [];
+  }) as EventListener);
+</script>
+
+<style>
+  .backlog-view {
+    width: 100%;
+  }
+  .backlog-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+  }
+  .backlog-table th {
+    text-align: left;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 2px solid var(--color-border);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    user-select: none;
+  }
+  .backlog-table th.sortable {
+    cursor: pointer;
+  }
+  .backlog-table th.sortable:hover {
+    color: var(--color-text);
+  }
+  .backlog-table th.sort-asc::after { content: ' ▲'; font-size: 0.7em; }
+  .backlog-table th.sort-desc::after { content: ' ▼'; font-size: 0.7em; }
+  .backlog-table td {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+  }
+  .backlog-row {
+    transition: background var(--transition-fast);
+  }
+  .backlog-row:hover {
+    background: var(--color-surface);
+  }
+  .col-drag {
+    width: 32px;
+    text-align: center;
+  }
+  .drag-handle {
+    cursor: grab;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-lg);
+  }
+  .col-priority { width: 120px; }
+  .col-status { width: 130px; }
+  .col-start, .col-end { width: 110px; white-space: nowrap; }
+  .col-tags { white-space: nowrap; }
+  .task-title-link {
+    cursor: pointer;
+    color: var(--color-primary);
+  }
+  .task-title-link:hover {
+    text-decoration: underline;
+  }
+  .inline-select {
+    font-size: var(--font-size-sm);
+    padding: 1px 4px;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+  }
+  .inline-select:hover {
+    border-color: var(--color-border);
+  }
+  .backlog-empty {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--color-text-muted);
+  }
+</style>

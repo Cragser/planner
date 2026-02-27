@@ -1,0 +1,25 @@
+---
+// SearchBox — text search input for FR-009
+// Updates searchQuery in filter store
+---
+<div class="search-box" id="search-box">
+  <input
+    type="search"
+    class="input search-input"
+    id="search-input"
+    placeholder="Search tasks... (/)"
+    aria-label="Search tasks"
+  />
+</div>
+
+<style>
+  .search-box {
+    display: flex;
+    align-items: center;
+  }
+  .search-input {
+    width: 240px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+</style>

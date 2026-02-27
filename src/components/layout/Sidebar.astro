@@ -1,0 +1,136 @@
+---
+// Sidebar component — project selector and navigation
+---
+<aside class="app-sidebar" id="sidebar">
+  <div class="sidebar-section">
+    <h3 class="sidebar-heading">Projects</h3>
+    <div id="project-list" class="project-list">
+      <!-- Populated by client-side JS -->
+    </div>
+    <button class="btn btn-create-project" id="btn-create-project" title="Create project (Ctrl+Shift+N)">
+      + New Project
+    </button>
+  </div>
+  <div class="sidebar-section sidebar-shortcuts">
+    <h3 class="sidebar-heading">Shortcuts</h3>
+    <ul class="shortcut-list">
+      <li><kbd class="kbd">N</kbd> New task</li>
+      <li><kbd class="kbd">1</kbd> Backlog</li>
+      <li><kbd class="kbd">2</kbd> Kanban</li>
+      <li><kbd class="kbd">3</kbd> Gantt</li>
+      <li><kbd class="kbd">/</kbd> Search</li>
+      <li><kbd class="kbd">Esc</kbd> Close</li>
+    </ul>
+  </div>
+</aside>
+
+<style>
+  .app-sidebar {
+    padding: var(--spacing-md);
+    border-right: 1px solid var(--color-border);
+    background: var(--color-surface);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+  .sidebar-heading {
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-sm);
+    letter-spacing: 0.05em;
+  }
+  .project-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: var(--spacing-sm);
+  }
+  .btn-create-project {
+    width: 100%;
+    justify-content: center;
+    font-size: var(--font-size-sm);
+  }
+  .shortcut-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+  .shortcut-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+  .sidebar-shortcuts {
+    margin-top: auto;
+  }
+  .project-item {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background var(--transition-fast);
+  }
+  .project-item:hover {
+    background: var(--color-bg);
+  }
+  .project-item.active {
+    background: var(--color-primary);
+    color: #fff;
+  }
+  .project-item-count {
+    font-size: 0.75rem;
+    opacity: 0.7;
+  }
+</style>
+
+<script>
+  const projectList = document.getElementById('project-list') as HTMLElement;
+  const createBtn = document.getElementById('btn-create-project') as HTMLElement;
+
+  function renderProjectList(projects: Array<{name: string; taskCount: number}>, active: string) {
+    projectList.innerHTML = '';
+    for (const p of projects) {
+      const item = document.createElement('div');
+      item.className = `project-item${p.name === active ? ' active' : ''}`;
+      item.dataset.project = p.name;
+      item.innerHTML = `
+        <span>${p.name}</span>
+        <span class="project-item-count">${p.taskCount}</span>
+      `;
+      projectList.appendChild(item);
+    }
+
+    if (projects.length === 0) {
+      projectList.innerHTML = '<div style="font-size:0.8rem;color:var(--color-text-muted);padding:4px;">No projects yet</div>';
+    }
+  }
+
+  // Click to switch project
+  projectList.addEventListener('click', (e) => {
+    const item = (e.target as HTMLElement).closest('.project-item') as HTMLElement | null;
+    if (!item?.dataset.project) return;
+    document.dispatchEvent(new CustomEvent('planner:switch-project', { detail: { project: item.dataset.project } }));
+  });
+
+  // Create project
+  createBtn.addEventListener('click', () => {
+    const name = prompt('Project name:');
+    if (name?.trim()) {
+      document.dispatchEvent(new CustomEvent('planner:create-project', { detail: { name: name.trim() } }));
+    }
+  });
+
+  // Listen for project list updates
+  document.addEventListener('planner:projects-changed', ((e: CustomEvent) => {
+    renderProjectList(e.detail.projects || [], e.detail.active || '');
+  }) as EventListener);
+</script>
+

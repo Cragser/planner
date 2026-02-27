@@ -1,0 +1,279 @@
+---
+// KanbanView — task cards organized in columns by status
+// T033: Column layout | T034: Render cards | T035: Drag-and-drop between columns
+// T036: Persist status changes | T037: Filter integration
+---
+<div class="kanban-view" id="kanban-view">
+  <div class="kanban-columns" id="kanban-columns">
+    <div class="kanban-column" data-status="backlog">
+      <div class="kanban-column-header">
+        <span class="status-badge status-badge--backlog">Backlog</span>
+        <span class="kanban-count" id="kanban-count-backlog">0</span>
+      </div>
+      <div class="kanban-cards" data-status="backlog"></div>
+    </div>
+    <div class="kanban-column" data-status="in-progress">
+      <div class="kanban-column-header">
+        <span class="status-badge status-badge--in-progress">In Progress</span>
+        <span class="kanban-count" id="kanban-count-in-progress">0</span>
+      </div>
+      <div class="kanban-cards" data-status="in-progress"></div>
+    </div>
+    <div class="kanban-column" data-status="review">
+      <div class="kanban-column-header">
+        <span class="status-badge status-badge--review">Review</span>
+        <span class="kanban-count" id="kanban-count-review">0</span>
+      </div>
+      <div class="kanban-cards" data-status="review"></div>
+    </div>
+    <div class="kanban-column" data-status="done">
+      <div class="kanban-column-header">
+        <span class="status-badge status-badge--done">Done</span>
+        <span class="kanban-count" id="kanban-count-done">0</span>
+      </div>
+      <div class="kanban-cards" data-status="done"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import type { Task, Status, Priority } from '../../lib/types.ts';
+  import { VALID_TRANSITIONS, STATUS_LABELS, PRIORITY_LABELS, KANBAN_STATUSES } from '../../lib/types.ts';
+
+  const columnsEl = document.getElementById('kanban-columns') as HTMLElement;
+
+  // --- Filter helpers ---
+  function getActiveStatusFilters(): Status[] {
+    const sel = document.getElementById('status-filter') as HTMLSelectElement | null;
+    if (!sel) return [];
+    return Array.from(sel.selectedOptions).map(o => o.value as Status);
+  }
+  function getActivePriorityFilters(): Priority[] {
+    const sel = document.getElementById('priority-filter') as HTMLSelectElement | null;
+    if (!sel) return [];
+    return Array.from(sel.selectedOptions).map(o => o.value as Priority);
+  }
+  function getSearchQuery(): string {
+    const input = document.getElementById('search-input') as HTMLInputElement | null;
+    return input?.value.trim().toLowerCase() || '';
+  }
+
+  function renderKanban(allTasks: Task[]) {
+    const statusFilters = getActiveStatusFilters();
+    const priorityFilters = getActivePriorityFilters();
+    const search = getSearchQuery();
+
+    // Filter tasks
+    const filtered = allTasks.filter(task => {
+      if (statusFilters.length > 0 && !statusFilters.includes(task.status)) return false;
+      if (priorityFilters.length > 0 && !priorityFilters.includes(task.priority)) return false;
+      if (search) {
+        if (!task.title.toLowerCase().includes(search) && !task.description.toLowerCase().includes(search)) return false;
+      }
+      return true;
+    });
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // Clear and populate each column
+    for (const status of KANBAN_STATUSES) {
+      const cardsEl = columnsEl.querySelector(`.kanban-cards[data-status="${status}"]`) as HTMLElement;
+      const countEl = document.getElementById(`kanban-count-${status}`);
+      if (!cardsEl) continue;
+
+      const columnTasks = filtered.filter(t => t.status === status).sort((a, b) => a.order - b.order);
+      cardsEl.innerHTML = '';
+
+      if (countEl) countEl.textContent = String(columnTasks.length);
+
+      for (const task of columnTasks) {
+        const isOverdue = task.end && task.end < today && task.status !== 'done' && task.status !== 'archived';
+        const card = document.createElement('div');
+        card.className = `kanban-card${isOverdue ? ' task--overdue' : ''}`;
+        card.dataset.taskId = task.id;
+        card.draggable = true;
+
+        card.innerHTML = `
+          <div class="kanban-card-header">
+            <span class="priority-indicator priority-indicator--${task.priority}" title="${PRIORITY_LABELS[task.priority]}"></span>
+            <span class="kanban-card-title">${escapeHtml(task.title)}</span>
+          </div>
+          <div class="kanban-card-meta">
+            ${task.start ? `<span class="kanban-card-dates">${task.start}${task.end ? ` → ${task.end}` : ''}</span>` : ''}
+            ${task.tags.length ? `<span class="kanban-card-tags">${task.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join(' ')}</span>` : ''}
+          </div>
+        `;
+        cardsEl.appendChild(card);
+      }
+    }
+  }
+
+  function escapeHtml(s: string): string {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // --- Drag and Drop between columns (T035, T036) ---
+  let draggedTaskId: string | null = null;
+
+  columnsEl?.addEventListener('dragstart', (e) => {
+    const card = (e.target as HTMLElement).closest('.kanban-card') as HTMLElement | null;
+    if (!card?.dataset.taskId) return;
+    draggedTaskId = card.dataset.taskId;
+    card.classList.add('dragging');
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedTaskId);
+    }
+  });
+
+  columnsEl?.addEventListener('dragend', (e) => {
+    const card = (e.target as HTMLElement).closest('.kanban-card') as HTMLElement | null;
+    if (card) card.classList.remove('dragging');
+    columnsEl.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    draggedTaskId = null;
+  });
+
+  columnsEl?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    const column = (e.target as HTMLElement).closest('.kanban-column') as HTMLElement | null;
+    if (column) {
+      columnsEl.querySelectorAll('.kanban-column.drag-over').forEach(el => el.classList.remove('drag-over'));
+      column.classList.add('drag-over');
+    }
+  });
+
+  columnsEl?.addEventListener('dragleave', (e) => {
+    const column = (e.target as HTMLElement).closest('.kanban-column') as HTMLElement | null;
+    if (column && !column.contains(e.relatedTarget as Node)) {
+      column.classList.remove('drag-over');
+    }
+  });
+
+  columnsEl?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    columnsEl.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+    if (!draggedTaskId) return;
+    const column = (e.target as HTMLElement).closest('.kanban-column') as HTMLElement | null;
+    if (!column?.dataset.status) return;
+
+    const targetStatus = column.dataset.status as Status;
+
+    // Find the task's current status
+    const allTasks: Task[] = (window as any).__plannerTasks || [];
+    const task = allTasks.find(t => t.id === draggedTaskId);
+    if (!task) return;
+
+    // Validate transition (T035)
+    if (task.status === targetStatus) return;
+    const allowed = VALID_TRANSITIONS[task.status];
+    if (!allowed.includes(targetStatus)) {
+      alert(`Invalid transition: ${STATUS_LABELS[task.status]} → ${STATUS_LABELS[targetStatus]}.\nAllowed: ${allowed.map(s => STATUS_LABELS[s]).join(', ')}`);
+      return;
+    }
+
+    // Dispatch status change
+    document.dispatchEvent(new CustomEvent('planner:update-task-status', {
+      detail: { taskId: draggedTaskId, newStatus: targetStatus }
+    }));
+  });
+
+  // --- Click to open task detail ---
+  columnsEl?.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).tagName === 'SELECT') return;
+    const card = (e.target as HTMLElement).closest('.kanban-card') as HTMLElement | null;
+    if (card?.dataset.taskId) {
+      document.dispatchEvent(new CustomEvent('planner:open-task', { detail: { taskId: card.dataset.taskId } }));
+    }
+  });
+
+  // --- Listen for task changes ---
+  document.addEventListener('planner:tasks-changed', ((e: CustomEvent) => {
+    renderKanban(e.detail.tasks || []);
+  }) as EventListener);
+</script>
+
+<style>
+  .kanban-view {
+    height: 100%;
+    overflow-x: auto;
+  }
+  .kanban-columns {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-md);
+    min-height: 400px;
+  }
+  .kanban-column {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
+    display: flex;
+    flex-direction: column;
+    min-width: 220px;
+    transition: border-color var(--transition-fast);
+    border: 2px solid transparent;
+  }
+  .kanban-column.drag-over {
+    border-color: var(--color-primary);
+    background: rgba(13, 110, 253, 0.03);
+  }
+  .kanban-column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+  }
+  .kanban-count {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    background: var(--color-border);
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+  .kanban-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    flex: 1;
+    min-height: 60px;
+  }
+  .kanban-card {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    cursor: grab;
+    transition: box-shadow var(--transition-fast);
+  }
+  .kanban-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .kanban-card.dragging {
+    opacity: 0.5;
+  }
+  .kanban-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: 4px;
+  }
+  .kanban-card-title {
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .kanban-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+</style>

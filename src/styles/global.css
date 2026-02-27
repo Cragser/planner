@@ -1,0 +1,267 @@
+/* === CSS Custom Properties === */
+:root {
+  /* Colors */
+  --color-bg: #ffffff;
+  --color-surface: #f8f9fa;
+  --color-border: #dee2e6;
+  --color-text: #212529;
+  --color-text-muted: #6c757d;
+  --color-primary: #0d6efd;
+  --color-primary-hover: #0b5ed7;
+
+  /* Status colors */
+  --color-status-backlog: #6c757d;
+  --color-status-in-progress: #0d6efd;
+  --color-status-review: #ffc107;
+  --color-status-done: #198754;
+  --color-status-archived: #adb5bd;
+
+  /* Priority colors */
+  --color-priority-p0: #dc3545;
+  --color-priority-p1: #fd7e14;
+  --color-priority-p2: #ffc107;
+  --color-priority-p3: #6c757d;
+
+  /* Overdue */
+  --color-overdue-bg: #fff3cd;
+  --color-overdue-border: #dc3545;
+  --color-overdue-text: #842029;
+
+  /* Layout */
+  --sidebar-width: 240px;
+  --header-height: 56px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  /* Typography */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', monospace;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+}
+
+/* === Base Reset === */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.5;
+}
+
+/* === Layout === */
+.app-layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-rows: var(--header-height) 1fr;
+  height: 100vh;
+}
+
+.app-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.app-sidebar {
+  grid-row: 2;
+  padding: var(--spacing-md);
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+  overflow-y: auto;
+}
+
+.app-main {
+  grid-row: 2;
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+}
+
+/* === Status Badges === */
+.status-badge {
+  display: inline-block;
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: #fff;
+}
+.status-badge--backlog { background: var(--color-status-backlog); }
+.status-badge--in-progress { background: var(--color-status-in-progress); }
+.status-badge--review { background: var(--color-status-review); color: var(--color-text); }
+.status-badge--done { background: var(--color-status-done); }
+.status-badge--archived { background: var(--color-status-archived); }
+
+/* === Priority Indicators === */
+.priority-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.priority-indicator--p0 { background: var(--color-priority-p0); }
+.priority-indicator--p1 { background: var(--color-priority-p1); }
+.priority-indicator--p2 { background: var(--color-priority-p2); }
+.priority-indicator--p3 { background: var(--color-priority-p3); }
+
+/* === Tag Chips === */
+.tag {
+  display: inline-block;
+  padding: 1px 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* === Overdue Task Styling (FR-014) === */
+.task--overdue {
+  border-left: 3px solid var(--color-overdue-border);
+  background: var(--color-overdue-bg);
+}
+.task--overdue .task-title {
+  color: var(--color-overdue-text);
+}
+.task--overdue .task-end-date {
+  color: var(--color-overdue-border);
+  font-weight: 600;
+}
+
+/* === Buttons === */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.btn:hover { background: var(--color-surface); }
+.btn--primary {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+.btn--primary:hover { background: var(--color-primary-hover); }
+
+/* === Form Controls === */
+.input, .select {
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-md);
+  font-family: var(--font-family);
+}
+.input:focus, .select:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+/* === Modal === */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal {
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  min-width: 480px;
+  max-width: 640px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* === Drag & Drop === */
+.dragging {
+  opacity: 0.5;
+}
+.drag-over {
+  border: 2px dashed var(--color-primary);
+  background: rgba(13, 110, 253, 0.05);
+}
+
+/* === Empty State === */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-muted);
+  text-align: center;
+  gap: var(--spacing-md);
+}
+
+/* === View Container === */
+.view-container {
+  height: 100%;
+}
+
+/* === Keyboard Shortcut Hints === */
+.kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+/* === Tooltip === */
+.tooltip {
+  position: absolute;
+  background: var(--color-text);
+  color: #fff;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  pointer-events: none;
+  z-index: 50;
+  white-space: nowrap;
+}
+
+/* === Error Boundary === */
+.error-boundary {
+  padding: var(--spacing-md);
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: var(--radius-sm);
+  color: #664d03;
+  margin: var(--spacing-sm) 0;
+}

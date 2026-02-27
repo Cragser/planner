@@ -1,0 +1,40 @@
+---
+// Header component — app title and view switcher container
+---
+<header class="app-header">
+  <div class="header-left">
+    <h1 class="header-title">Planner</h1>
+  </div>
+  <div class="header-center">
+    <slot name="view-switcher" />
+  </div>
+  <div class="header-right">
+    <slot name="actions" />
+  </div>
+</header>
+
+<style>
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--spacing-md);
+    height: var(--header-height);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  .header-title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+  }
+  .header-center {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+</style>

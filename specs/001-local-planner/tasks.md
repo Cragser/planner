@@ -17,11 +17,11 @@
 
 **Purpose**: Project initialization, Astro 5.x scaffolding, and dependency installation
 
-- [ ] T001 Initialize Astro 5.x project with TypeScript in repository root
-- [ ] T002 Install core dependencies: gray-matter, vitest, playwright, markdown-it in package.json
-- [ ] T003 [P] Create directory structure per plan.md: src/components/{views,task,layout,common}/, src/lib/{parser,store,gantt}/, src/pages/, src/styles/, src/scripts/, tests/unit/, tests/e2e/
-- [ ] T004 [P] Configure Vitest for unit testing in vitest.config.ts
-- [ ] T005 [P] Configure Playwright for E2E testing in playwright.config.ts
+- [x] T001 Initialize Astro 5.x project with TypeScript in repository root
+- [x] T002 Install core dependencies: gray-matter, vitest, playwright, markdown-it in package.json
+- [x] T003 [P] Create directory structure per plan.md: src/components/{views,task,layout,common}/, src/lib/{parser,store,gantt}/, src/pages/, src/styles/, src/scripts/, tests/unit/, tests/e2e/
+- [x] T004 [P] Configure Vitest for unit testing in vitest.config.ts
+- [x] T005 [P] Configure Playwright for E2E testing in playwright.config.ts
 
 ---
 
@@ -31,20 +31,20 @@
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T006 Define shared TypeScript types (Task, Project, Status enum, Priority enum, FilterState) in src/lib/types.ts
-- [ ] T007 [P] Define markdown frontmatter schema and validation rules (title non-empty max 200 chars, start ≤ end, priority defaults P3, status defaults Backlog) in src/lib/parser/schema.ts
-- [ ] T008 Implement markdown reader (gray-matter parse .md files to Task objects, handle malformed files gracefully per FR-012) in src/lib/parser/reader.ts
-- [ ] T009 Implement markdown writer (Task objects to .md files with frontmatter + body, filename slug generation, collision handling with -2/-3 suffix) in src/lib/parser/writer.ts
-- [ ] T010 Implement task store with CRUD operations (create, read, update, delete) backed by parser in src/lib/store/tasks.ts
-- [ ] T011 Implement state transition validation in src/lib/store/tasks.ts — enforce allowed transitions: Backlog→In Progress→Review→Done→Archived, Review→In Progress (back), any state→Archived, Archived→Backlog (restore); reject invalid transitions with error
-- [ ] T012 [P] Implement filter and sort state management (status filter, priority filter, tag filter, text search query, sort column, sort direction) in src/lib/store/filters.ts
-- [ ] T013 [P] Create global CSS variables, base styles, and overdue task CSS classes (past end date + not Done/Archived per FR-014) in src/styles/global.css
-- [ ] T014 Create base layout components: Header in src/components/layout/Header.astro, Sidebar in src/components/layout/Sidebar.astro, ViewSwitcher in src/components/layout/ViewSwitcher.astro
-- [ ] T015 [P] Create FilterBar component (status dropdown, priority dropdown, tags dropdown — UI only, wired to filter store) in src/components/common/FilterBar.astro
-- [ ] T016 [P] Create SearchBox component (text input that updates text search query in filter store per FR-009) in src/components/common/SearchBox.astro
-- [ ] T017 [P] Create EmptyState component (call-to-action for empty projects, shows "Create your first task" prompt) in src/components/common/EmptyState.astro
-- [ ] T018 Implement global keyboard shortcuts handler (n=new task, 1/2/3=switch views, /=focus search, Esc=close modals) in src/scripts/keyboard.ts
-- [ ] T019 Create main page entry point wiring layout, views, and state in src/pages/index.astro
+- [x] T006 Define shared TypeScript types (Task, Project, Status enum, Priority enum, FilterState) in src/lib/types.ts
+- [x] T007 [P] Define markdown frontmatter schema and validation rules (title non-empty max 200 chars, start ≤ end, priority defaults P3, status defaults Backlog) in src/lib/parser/schema.ts
+- [x] T008 Implement markdown reader (gray-matter parse .md files to Task objects, handle malformed files gracefully per FR-012) in src/lib/parser/reader.ts
+- [x] T009 Implement markdown writer (Task objects to .md files with frontmatter + body, filename slug generation, collision handling with -2/-3 suffix) in src/lib/parser/writer.ts
+- [x] T010 Implement task store with CRUD operations (create, read, update, delete) backed by parser in src/lib/store/tasks.ts
+- [x] T011 Implement state transition validation in src/lib/store/tasks.ts — enforce allowed transitions: Backlog→In Progress→Review→Done→Archived, Review→In Progress (back), any state→Archived, Archived→Backlog (restore); reject invalid transitions with error
+- [x] T012 [P] Implement filter and sort state management (status filter, priority filter, tag filter, text search query, sort column, sort direction) in src/lib/store/filters.ts
+- [x] T013 [P] Create global CSS variables, base styles, and overdue task CSS classes (past end date + not Done/Archived per FR-014) in src/styles/global.css
+- [x] T014 Create base layout components: Header in src/components/layout/Header.astro, Sidebar in src/components/layout/Sidebar.astro, ViewSwitcher in src/components/layout/ViewSwitcher.astro
+- [x] T015 [P] Create FilterBar component (status dropdown, priority dropdown, tags dropdown — UI only, wired to filter store) in src/components/common/FilterBar.astro
+- [x] T016 [P] Create SearchBox component (text input that updates text search query in filter store per FR-009) in src/components/common/SearchBox.astro
+- [x] T017 [P] Create EmptyState component (call-to-action for empty projects, shows "Create your first task" prompt) in src/components/common/EmptyState.astro
+- [x] T018 Implement global keyboard shortcuts handler (n=new task, 1/2/3=switch views, /=focus search, Esc=close modals) in src/scripts/keyboard.ts
+- [x] T019 Create main page entry point wiring layout, views, and state in src/pages/index.astro
 
 **Checkpoint**: Foundation ready — type system, parser, store with transition validation, base layout, and keyboard shortcuts are in place. User story implementation can now begin.
 
@@ -58,13 +58,13 @@
 
 ### Implementation for User Story 1
 
-- [ ] T020 [P] [US1] Create TaskCard component (displays title, status badge, priority indicator, tags, overdue styling via CSS class) in src/components/task/TaskCard.astro
-- [ ] T021 [P] [US1] Create TaskForm component (modal with fields: title, description, status, priority, start date, end date, tags) in src/components/task/TaskForm.astro
-- [ ] T022 [US1] Create TaskDetail component (full markdown-rendered view of a task using markdown-it) in src/components/task/TaskDetail.astro
-- [ ] T023 [US1] Wire TaskForm to task store: create new task, generate slug filename, persist via writer in src/pages/index.astro
-- [ ] T024 [US1] Wire TaskForm for editing: load existing task into form, update and persist changes via writer in src/pages/index.astro
-- [ ] T025 [US1] Implement task deletion with confirmation dialog, remove markdown file via store in src/pages/index.astro
-- [ ] T026 [US1] Add inline status and priority editing on TaskCard (status dropdown enforces valid transitions per T011, priority dropdown persists on change) in src/components/task/TaskCard.astro
+- [x] T020 [P] [US1] Create TaskCard component (displays title, status badge, priority indicator, tags, overdue styling via CSS class) in src/components/task/TaskCard.astro
+- [x] T021 [P] [US1] Create TaskForm component (modal with fields: title, description, status, priority, start date, end date, tags) in src/components/task/TaskForm.astro
+- [x] T022 [US1] Create TaskDetail component (full markdown-rendered view of a task using markdown-it) in src/components/task/TaskDetail.astro
+- [x] T023 [US1] Wire TaskForm to task store: create new task, generate slug filename, persist via writer in src/pages/index.astro
+- [x] T024 [US1] Wire TaskForm for editing: load existing task into form, update and persist changes via writer in src/pages/index.astro
+- [x] T025 [US1] Implement task deletion with confirmation dialog, remove markdown file via store in src/pages/index.astro
+- [x] T026 [US1] Add inline status and priority editing on TaskCard (status dropdown enforces valid transitions per T011, priority dropdown persists on change) in src/components/task/TaskCard.astro
 
 **Checkpoint**: Users can create, view, edit, and delete tasks. Each task is a markdown file with frontmatter. State transitions are validated. FR-001, FR-002, FR-003, FR-004, FR-011, FR-013 are satisfied.
 
@@ -80,12 +80,12 @@
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] Create BacklogView component with sortable table (columns: title, status, priority, start, end, tags) in src/components/views/BacklogView.astro
-- [ ] T028 [US2] Implement column header click sorting (ascending/descending toggle for each column, reads/writes sort state from filter store) in src/components/views/BacklogView.astro
-- [ ] T029 [US2] Integrate FilterBar and SearchBox with BacklogView (wire filter store state to task list rendering) in src/components/views/BacklogView.astro
-- [ ] T030 [US2] Implement inline status and priority editing in backlog table rows (status enforces valid transitions) in src/components/views/BacklogView.astro
-- [ ] T031 [US2] Implement drag-and-drop row reordering using HTML Drag and Drop API in src/components/views/BacklogView.astro
-- [ ] T032 [US2] Persist manual sort order changes (update order field in markdown frontmatter) via store in src/components/views/BacklogView.astro
+- [x] T027 [US2] Create BacklogView component with sortable table (columns: title, status, priority, start, end, tags) in src/components/views/BacklogView.astro
+- [x] T028 [US2] Implement column header click sorting (ascending/descending toggle for each column, reads/writes sort state from filter store) in src/components/views/BacklogView.astro
+- [x] T029 [US2] Integrate FilterBar and SearchBox with BacklogView (wire filter store state to task list rendering) in src/components/views/BacklogView.astro
+- [x] T030 [US2] Implement inline status and priority editing in backlog table rows (status enforces valid transitions) in src/components/views/BacklogView.astro
+- [x] T031 [US2] Implement drag-and-drop row reordering using HTML Drag and Drop API in src/components/views/BacklogView.astro
+- [x] T032 [US2] Persist manual sort order changes (update order field in markdown frontmatter) via store in src/components/views/BacklogView.astro
 
 **Checkpoint**: Backlog view is fully functional with sorting, filtering, inline editing, and drag-and-drop reorder. FR-005, FR-008 (in backlog), FR-009 (in backlog) are satisfied.
 
@@ -99,11 +99,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T033 [US3] Create KanbanView component with status columns (Backlog, In Progress, Review, Done) in src/components/views/KanbanView.astro
-- [ ] T034 [US3] Render TaskCard components in their correct status columns in src/components/views/KanbanView.astro
-- [ ] T035 [US3] Implement drag-and-drop between columns using HTML Drag and Drop API (validate state transition before accepting drop per T011) in src/components/views/KanbanView.astro
-- [ ] T036 [US3] Persist status changes from column drag-and-drop to markdown files via store in src/components/views/KanbanView.astro
-- [ ] T037 [US3] Integrate FilterBar with KanbanView (status, priority, and tag filtering across all columns) in src/components/views/KanbanView.astro
+- [x] T033 [US3] Create KanbanView component with status columns (Backlog, In Progress, Review, Done) in src/components/views/KanbanView.astro
+- [x] T034 [US3] Render TaskCard components in their correct status columns in src/components/views/KanbanView.astro
+- [x] T035 [US3] Implement drag-and-drop between columns using HTML Drag and Drop API (validate state transition before accepting drop per T011) in src/components/views/KanbanView.astro
+- [x] T036 [US3] Persist status changes from column drag-and-drop to markdown files via store in src/components/views/KanbanView.astro
+- [x] T037 [US3] Integrate FilterBar with KanbanView (status, priority, and tag filtering across all columns) in src/components/views/KanbanView.astro
 
 **Checkpoint**: Kanban view is fully functional with drag-and-drop status changes (with transition validation) and filtering. FR-006, FR-008 (in kanban) are satisfied.
 
@@ -117,13 +117,13 @@
 
 ### Implementation for User Story 4
 
-- [ ] T038 [P] [US4] Implement timeline date calculations (date range, scale units, grid positions for week/month/quarter) in src/lib/gantt/timeline.ts
-- [ ] T039 [P] [US4] Implement bar positioning and layout (x/y coordinates, width from date range, row stacking) in src/lib/gantt/layout.ts
-- [ ] T040 [US4] Create GanttView component with SVG rendering (timeline grid, task bars, date headers) in src/components/views/GanttView.astro
-- [ ] T041 [US4] Implement zoom level controls (week, month, quarter) with timeline rescaling in src/components/views/GanttView.astro
-- [ ] T042 [US4] Add hover tooltips on task bars showing title, dates, priority, and status in src/components/views/GanttView.astro
-- [ ] T043 [US4] Filter out tasks without end dates from Gantt rendering in src/components/views/GanttView.astro
-- [ ] T044 [US4] Integrate FilterBar with GanttView (status, priority, and tag filtering applied to timeline task bars) in src/components/views/GanttView.astro
+- [x] T038 [P] [US4] Implement timeline date calculations (date range, scale units, grid positions for week/month/quarter) in src/lib/gantt/timeline.ts
+- [x] T039 [P] [US4] Implement bar positioning and layout (x/y coordinates, width from date range, row stacking) in src/lib/gantt/layout.ts
+- [x] T040 [US4] Create GanttView component with SVG rendering (timeline grid, task bars, date headers) in src/components/views/GanttView.astro
+- [x] T041 [US4] Implement zoom level controls (week, month, quarter) with timeline rescaling in src/components/views/GanttView.astro
+- [x] T042 [US4] Add hover tooltips on task bars showing title, dates, priority, and status in src/components/views/GanttView.astro
+- [x] T043 [US4] Filter out tasks without end dates from Gantt rendering in src/components/views/GanttView.astro
+- [x] T044 [US4] Integrate FilterBar with GanttView (status, priority, and tag filtering applied to timeline task bars) in src/components/views/GanttView.astro
 
 **Checkpoint**: Gantt view is fully functional with SVG timeline, zoom controls, tooltips, date filtering, and FR-008 filtering. FR-007, FR-008 (in gantt) are satisfied.
 
@@ -137,11 +137,11 @@
 
 ### Implementation for User Story 5
 
-- [ ] T045 [US5] Implement project store (scan root folder for project subdirectories, track active project, define configurable root path defaulting to ~/planner-data/) in src/lib/store/projects.ts
-- [ ] T046 [US5] Add project selector dropdown in Sidebar component in src/components/layout/Sidebar.astro
-- [ ] T047 [US5] Implement create new project functionality (prompt for name, create folder on filesystem) in src/components/layout/Sidebar.astro
-- [ ] T048 [US5] Scope task store loading and all views to active project only in src/lib/store/tasks.ts
-- [ ] T049 [US5] Persist active project selection and root path in localStorage for session continuity in src/lib/store/projects.ts
+- [x] T045 [US5] Implement project store (scan root folder for project subdirectories, track active project, define configurable root path defaulting to ~/planner-data/) in src/lib/store/projects.ts
+- [x] T046 [US5] Add project selector dropdown in Sidebar component in src/components/layout/Sidebar.astro
+- [x] T047 [US5] Implement create new project functionality (prompt for name, create folder on filesystem) in src/components/layout/Sidebar.astro
+- [x] T048 [US5] Scope task store loading and all views to active project only in src/lib/store/tasks.ts
+- [x] T049 [US5] Persist active project selection and root path in localStorage for session continuity in src/lib/store/projects.ts
 
 **Checkpoint**: Multi-project support is fully functional. Users can switch between projects and create new ones. Root path is configurable. FR-010 is satisfied.
 
@@ -151,16 +151,16 @@
 
 **Purpose**: Cross-view integrations, validation of success criteria, and final quality checks
 
-- [ ] T050 Wire text search across all views: connect SearchBox query from filter store to BacklogView, KanbanView, and GanttView task filtering (FR-009) in src/lib/store/filters.ts
-- [ ] T051 Preserve filter/sort state when switching between views (FR-015) — ensure filter store state persists across ViewSwitcher navigation in src/lib/store/filters.ts
-- [ ] T052 [P] Verify overdue task visual indicators render correctly across all three views (BacklogView rows, KanbanView cards, GanttView bars) per FR-014 in src/styles/global.css and view components
-- [ ] T053 Add error boundary UI for malformed markdown files (show file path and error message, skip gracefully, do not crash) per FR-012 in src/components/common/EmptyState.astro
-- [ ] T054 Validate SC-001: verify task creation appears in all applicable views within 5 seconds
-- [ ] T055 Validate SC-002/SC-003: verify view switching completes under 1 second, 200 tasks render under 3 seconds
-- [ ] T056 Validate SC-004: verify markdown files remain correctly formatted after 50 consecutive create/edit/delete operations
-- [ ] T057 Validate SC-006: verify all task modifications persist correctly after app restart (page reload)
-- [ ] T058 Run quickstart.md validation scenarios end-to-end
-- [ ] T059 Code cleanup: remove unused imports, verify all keyboard shortcuts work per SC-007 (90% of actions via keyboard)
+- [x] T050 Wire text search across all views: connect SearchBox query from filter store to BacklogView, KanbanView, and GanttView task filtering (FR-009) in src/lib/store/filters.ts
+- [x] T051 Preserve filter/sort state when switching between views (FR-015) — ensure filter store state persists across ViewSwitcher navigation in src/lib/store/filters.ts
+- [x] T052 [P] Verify overdue task visual indicators render correctly across all three views (BacklogView rows, KanbanView cards, GanttView bars) per FR-014 in src/styles/global.css and view components
+- [x] T053 Add error boundary UI for malformed markdown files (show file path and error message, skip gracefully, do not crash) per FR-012 in src/components/common/EmptyState.astro
+- [x] T054 Validate SC-001: verify task creation appears in all applicable views within 5 seconds
+- [x] T055 Validate SC-002/SC-003: verify view switching completes under 1 second, 200 tasks render under 3 seconds
+- [x] T056 Validate SC-004: verify markdown files remain correctly formatted after 50 consecutive create/edit/delete operations
+- [x] T057 Validate SC-006: verify all task modifications persist correctly after app restart (page reload)
+- [x] T058 Run quickstart.md validation scenarios end-to-end
+- [x] T059 Code cleanup: remove unused imports, verify all keyboard shortcuts work per SC-007 (90% of actions via keyboard)
 
 ---
 

@@ -1,0 +1,329 @@
+---
+// GanttView — SVG timeline with task bars, zoom controls, tooltips, filtering
+// T040: SVG rendering | T041: Zoom controls | T042: Tooltips
+// T043: Filter out tasks without end date | T044: FilterBar integration (FR-008)
+---
+<div class="gantt-view" id="gantt-view">
+  <div class="gantt-toolbar">
+    <div class="gantt-zoom-controls">
+      <span class="gantt-zoom-label">Zoom:</span>
+      <button class="btn gantt-zoom-btn active" data-zoom="week">Week</button>
+      <button class="btn gantt-zoom-btn" data-zoom="month">Month</button>
+      <button class="btn gantt-zoom-btn" data-zoom="quarter">Quarter</button>
+    </div>
+  </div>
+  <div class="gantt-scroll-container" id="gantt-scroll">
+    <svg id="gantt-svg" class="gantt-svg"></svg>
+  </div>
+  <div class="gantt-tooltip" id="gantt-tooltip" style="display:none"></div>
+  <div class="gantt-empty" id="gantt-empty" style="display:none">
+    <p>No tasks with date ranges to display.</p>
+  </div>
+</div>
+
+<script>
+  import type { Task, Status, Priority, GanttZoom } from '../../lib/types.ts';
+  import { STATUS_LABELS, PRIORITY_LABELS } from '../../lib/types.ts';
+  import { calculateDateRange, generateTimeUnits, dateToPixel } from '../../lib/gantt/timeline.ts';
+  import { calculateBars, getTotalHeight, getLabelColumnWidth, getRowHeight } from '../../lib/gantt/layout.ts';
+
+  const svg = document.getElementById('gantt-svg') as unknown as SVGSVGElement;
+  const tooltipEl = document.getElementById('gantt-tooltip') as HTMLElement;
+  const emptyEl = document.getElementById('gantt-empty') as HTMLElement;
+  const scrollContainer = document.getElementById('gantt-scroll') as HTMLElement;
+
+  let currentZoom: GanttZoom = 'week';
+
+  // --- Status/Priority colors matching CSS variables ---
+  const statusColors: Record<Status, string> = {
+    'backlog': '#6c757d',
+    'in-progress': '#0d6efd',
+    'review': '#ffc107',
+    'done': '#198754',
+    'archived': '#adb5bd',
+  };
+  const priorityColors: Record<Priority, string> = {
+    'p0': '#dc3545',
+    'p1': '#fd7e14',
+    'p2': '#ffc107',
+    'p3': '#6c757d',
+  };
+
+  // --- Filter helpers ---
+  function getActiveStatusFilters(): Status[] {
+    const sel = document.getElementById('status-filter') as HTMLSelectElement | null;
+    if (!sel) return [];
+    return Array.from(sel.selectedOptions).map(o => o.value as Status);
+  }
+  function getActivePriorityFilters(): Priority[] {
+    const sel = document.getElementById('priority-filter') as HTMLSelectElement | null;
+    if (!sel) return [];
+    return Array.from(sel.selectedOptions).map(o => o.value as Priority);
+  }
+  function getSearchQuery(): string {
+    const input = document.getElementById('search-input') as HTMLInputElement | null;
+    return input?.value.trim().toLowerCase() || '';
+  }
+
+  function renderGantt(allTasks: Task[]) {
+    const statusFilters = getActiveStatusFilters();
+    const priorityFilters = getActivePriorityFilters();
+    const search = getSearchQuery();
+
+    // T043: Filter out tasks without end date
+    // T044: Apply status/priority/tag/search filters
+    let filtered = allTasks.filter(task => {
+      if (!task.end) return false; // T043
+      if (statusFilters.length > 0 && !statusFilters.includes(task.status)) return false;
+      if (priorityFilters.length > 0 && !priorityFilters.includes(task.priority)) return false;
+      if (search) {
+        if (!task.title.toLowerCase().includes(search) && !task.description.toLowerCase().includes(search)) return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      svg.innerHTML = '';
+      svg.setAttribute('width', '0');
+      svg.setAttribute('height', '0');
+      emptyEl.style.display = '';
+      return;
+    }
+    emptyEl.style.display = 'none';
+
+    // Calculate timeline range
+    const starts = filtered.map(t => t.start);
+    const ends = filtered.map(t => t.end);
+    const { min, max } = calculateDateRange(starts, ends, 7);
+    const totalMs = max.getTime() - min.getTime();
+
+    // Generate time units for header
+    const unitWidth = currentZoom === 'quarter' ? 80 : 40;
+    const units = generateTimeUnits(min, max, currentZoom, unitWidth);
+    const labelWidth = getLabelColumnWidth();
+    const timelineWidth = units.reduce((s, u) => s + u.width, 0);
+    const totalWidth = labelWidth + timelineWidth;
+
+    // Calculate bar positions
+    const bars = calculateBars(filtered, min, totalMs, timelineWidth);
+    const rowHeight = getRowHeight();
+    const headerHeight = 40;
+    const totalHeight = headerHeight + getTotalHeight(bars.length);
+
+    svg.setAttribute('width', String(totalWidth));
+    svg.setAttribute('height', String(totalHeight));
+    svg.innerHTML = '';
+
+    const ns = 'http://www.w3.org/2000/svg';
+
+    // --- Draw grid columns ---
+    let colX = labelWidth;
+    for (const unit of units) {
+      // Vertical grid line
+      const line = document.createElementNS(ns, 'line');
+      line.setAttribute('x1', String(colX));
+      line.setAttribute('y1', String(headerHeight));
+      line.setAttribute('x2', String(colX));
+      line.setAttribute('y2', String(totalHeight));
+      line.setAttribute('stroke', '#e9ecef');
+      line.setAttribute('stroke-width', '1');
+      svg.appendChild(line);
+
+      // Header label
+      const text = document.createElementNS(ns, 'text');
+      text.setAttribute('x', String(colX + unit.width / 2));
+      text.setAttribute('y', String(headerHeight - 10));
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('font-size', '11');
+      text.setAttribute('fill', '#6c757d');
+      text.textContent = unit.label;
+      svg.appendChild(text);
+
+      colX += unit.width;
+    }
+
+    // --- Header separator line ---
+    const headerLine = document.createElementNS(ns, 'line');
+    headerLine.setAttribute('x1', '0');
+    headerLine.setAttribute('y1', String(headerHeight));
+    headerLine.setAttribute('x2', String(totalWidth));
+    headerLine.setAttribute('y2', String(headerHeight));
+    headerLine.setAttribute('stroke', '#dee2e6');
+    headerLine.setAttribute('stroke-width', '2');
+    svg.appendChild(headerLine);
+
+    // --- Today marker ---
+    const today = new Date();
+    if (today >= min && today <= max) {
+      const todayX = labelWidth + dateToPixel(today, min, totalMs, timelineWidth);
+      const todayLine = document.createElementNS(ns, 'line');
+      todayLine.setAttribute('x1', String(todayX));
+      todayLine.setAttribute('y1', String(headerHeight));
+      todayLine.setAttribute('x2', String(todayX));
+      todayLine.setAttribute('y2', String(totalHeight));
+      todayLine.setAttribute('stroke', '#dc3545');
+      todayLine.setAttribute('stroke-width', '1.5');
+      todayLine.setAttribute('stroke-dasharray', '4 2');
+      svg.appendChild(todayLine);
+    }
+
+    // --- Draw row backgrounds and task bars ---
+    const isOverdueToday = new Date().toISOString().split('T')[0];
+    for (const bar of bars) {
+      const barY = headerHeight + bar.y;
+      const task = bar.task;
+      const isOverdue = task.end && task.end < isOverdueToday && task.status !== 'done' && task.status !== 'archived';
+
+      // Row background
+      const rowBg = document.createElementNS(ns, 'rect');
+      rowBg.setAttribute('x', '0');
+      rowBg.setAttribute('y', String(barY));
+      rowBg.setAttribute('width', String(totalWidth));
+      rowBg.setAttribute('height', String(rowHeight));
+      rowBg.setAttribute('fill', bars.indexOf(bar) % 2 === 0 ? '#ffffff' : '#f8f9fa');
+      svg.appendChild(rowBg);
+
+      // Label text (in left column)
+      const label = document.createElementNS(ns, 'text');
+      label.setAttribute('x', '8');
+      label.setAttribute('y', String(barY + bar.height / 2 + 4));
+      label.setAttribute('font-size', '12');
+      label.setAttribute('fill', isOverdue ? '#842029' : '#212529');
+      label.textContent = task.title.length > 25 ? task.title.slice(0, 25) + '...' : task.title;
+      svg.appendChild(label);
+
+      // Priority dot
+      const dot = document.createElementNS(ns, 'circle');
+      dot.setAttribute('cx', String(labelWidth - 12));
+      dot.setAttribute('cy', String(barY + bar.height / 2));
+      dot.setAttribute('r', '4');
+      dot.setAttribute('fill', priorityColors[task.priority]);
+      svg.appendChild(dot);
+
+      // Task bar
+      const rect = document.createElementNS(ns, 'rect');
+      rect.setAttribute('x', String(labelWidth + bar.x));
+      rect.setAttribute('y', String(barY + 2));
+      rect.setAttribute('width', String(bar.width));
+      rect.setAttribute('height', String(bar.height - 4));
+      rect.setAttribute('rx', '4');
+      rect.setAttribute('fill', isOverdue ? '#dc3545' : statusColors[task.status]);
+      rect.setAttribute('opacity', '0.85');
+      rect.setAttribute('data-task-id', task.id);
+      rect.setAttribute('class', 'gantt-bar');
+      rect.setAttribute('style', 'cursor: pointer;');
+      svg.appendChild(rect);
+    }
+
+    // --- Tooltip handling (T042) ---
+    svg.addEventListener('mousemove', (e) => {
+      const target = e.target as SVGElement;
+      if (!target.classList.contains('gantt-bar')) {
+        tooltipEl.style.display = 'none';
+        return;
+      }
+      const taskId = target.getAttribute('data-task-id');
+      const task = filtered.find(t => t.id === taskId);
+      if (!task) return;
+
+      tooltipEl.innerHTML = `
+        <strong>${task.title}</strong><br/>
+        Status: ${STATUS_LABELS[task.status]}<br/>
+        Priority: ${PRIORITY_LABELS[task.priority]}<br/>
+        ${task.start} → ${task.end}
+      `;
+      tooltipEl.style.display = '';
+      tooltipEl.style.left = `${e.clientX + 12}px`;
+      tooltipEl.style.top = `${e.clientY - 10}px`;
+    });
+
+    svg.addEventListener('mouseleave', () => {
+      tooltipEl.style.display = 'none';
+    });
+
+    // Click to open task detail
+    svg.addEventListener('click', (e) => {
+      const target = e.target as SVGElement;
+      if (!target.classList.contains('gantt-bar')) return;
+      const taskId = target.getAttribute('data-task-id');
+      if (taskId) {
+        document.dispatchEvent(new CustomEvent('planner:open-task', { detail: { taskId } }));
+      }
+    });
+  }
+
+  // --- Zoom Controls (T041) ---
+  document.querySelectorAll('.gantt-zoom-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const zoom = (btn as HTMLElement).dataset.zoom as GanttZoom;
+      if (!zoom) return;
+      currentZoom = zoom;
+      document.querySelectorAll('.gantt-zoom-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.dispatchEvent(new CustomEvent('planner:request-refresh'));
+    });
+  });
+
+  // Listen for task changes
+  document.addEventListener('planner:tasks-changed', ((e: CustomEvent) => {
+    renderGantt(e.detail.tasks || []);
+  }) as EventListener);
+</script>
+
+<style>
+  .gantt-view {
+    position: relative;
+    height: 100%;
+  }
+  .gantt-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--spacing-sm) 0;
+  }
+  .gantt-zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+  .gantt-zoom-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+  .gantt-zoom-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+  .gantt-zoom-btn.active {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+  }
+  .gantt-scroll-container {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+  }
+  .gantt-svg {
+    display: block;
+  }
+  .gantt-tooltip {
+    position: fixed;
+    background: var(--color-text);
+    color: #fff;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    pointer-events: none;
+    z-index: 50;
+    max-width: 300px;
+    line-height: 1.4;
+  }
+  .gantt-empty {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--color-text-muted);
+  }
+</style>

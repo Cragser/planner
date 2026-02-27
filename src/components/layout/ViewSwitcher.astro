@@ -1,0 +1,43 @@
+---
+// ViewSwitcher — toggles between Backlog, Kanban, and Gantt views
+---
+<nav class="view-switcher" id="view-switcher">
+  <button class="view-btn active" data-view="backlog" title="Backlog view (1)">
+    Backlog
+  </button>
+  <button class="view-btn" data-view="kanban" title="Kanban view (2)">
+    Kanban
+  </button>
+  <button class="view-btn" data-view="gantt" title="Gantt view (3)">
+    Gantt
+  </button>
+</nav>
+
+<style>
+  .view-switcher {
+    display: flex;
+    gap: 2px;
+    background: var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+  }
+  .view-btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border: none;
+    background: transparent;
+    border-radius: 3px;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    transition: all var(--transition-fast);
+  }
+  .view-btn:hover {
+    color: var(--color-text);
+  }
+  .view-btn.active {
+    background: var(--color-bg);
+    color: var(--color-text);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  }
+</style>

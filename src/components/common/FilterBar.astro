@@ -1,0 +1,62 @@
+---
+// FilterBar — status, priority, and tag filter dropdowns
+// Wired to filter store via client-side JS
+---
+<div class="filter-bar" id="filter-bar">
+  <div class="filter-group">
+    <label class="filter-label" for="status-filter">Status</label>
+    <select class="select filter-select" id="status-filter" multiple>
+      <option value="backlog">Backlog</option>
+      <option value="in-progress">In Progress</option>
+      <option value="review">Review</option>
+      <option value="done">Done</option>
+      <option value="archived">Archived</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label" for="priority-filter">Priority</label>
+    <select class="select filter-select" id="priority-filter" multiple>
+      <option value="p0">P0 Critical</option>
+      <option value="p1">P1 High</option>
+      <option value="p2">P2 Medium</option>
+      <option value="p3">P3 Low</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label" for="tag-filter">Tags</label>
+    <select class="select filter-select" id="tag-filter" multiple>
+      <!-- Populated dynamically from task tags -->
+    </select>
+  </div>
+  <button class="btn btn-reset-filters" id="btn-reset-filters" title="Clear all filters">
+    Clear
+  </button>
+</div>
+
+<style>
+  .filter-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) 0;
+    flex-wrap: wrap;
+  }
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .filter-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    font-weight: 500;
+  }
+  .filter-select {
+    min-width: 120px;
+    max-height: 28px;
+  }
+  .btn-reset-filters {
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+</style>
