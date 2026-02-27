@@ -11,7 +11,7 @@ A local-first task planner with three views (Backlog, Kanban, Gantt) that uses m
 
 **Language/Version**: TypeScript 5.x
 **Primary Dependencies**: Astro 5.x (static site framework), vanilla CSS/JS for interactions
-**Storage**: Markdown files on local filesystem (one file per task or consolidated per project)
+**Storage**: Markdown files on local filesystem (one file per task)
 **Testing**: Vitest (unit), Playwright (E2E)
 **Target Platform**: Desktop browser (local dev server via `astro dev`)
 **Project Type**: Web application (local, single-user)
@@ -155,7 +155,7 @@ Can be **multiple lines** of markdown.
 | File strategy | One .md per task | Better git diffs, independent file management |
 | State management | In-memory store from parsed files | Simple, no external DB, reload from disk on refresh |
 | Drag & drop | HTML Drag and Drop API | No library needed, native browser support |
-| Gantt rendering | Canvas or SVG | Lightweight, no chart library dependency |
+| Gantt rendering | SVG | Lightweight, no chart library dependency |
 | CSS | Vanilla CSS with custom properties | Aligns with constitution (simplicity, zero deps) |
 | Testing | Vitest + Playwright | Industry standard, good Astro integration |
 

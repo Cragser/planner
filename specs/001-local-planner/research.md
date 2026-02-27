@@ -11,7 +11,7 @@
 
 ## Markdown Parsing
 
-**Decision**: Use `gray-matter` for frontmatter + `marked` or `markdown-it` for body
+**Decision**: Use `gray-matter` for frontmatter + `markdown-it` for body
 **Rationale**: `gray-matter` is the de-facto standard for YAML frontmatter parsing in the JS ecosystem. Lightweight, zero dependencies besides js-yaml. Body parsing only needed for task detail view.
 **Alternatives considered**:
 - **Custom regex parser**: Fragile, edge cases with YAML
